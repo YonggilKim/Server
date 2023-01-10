@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ServerCore;
+using System;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -8,14 +9,32 @@ using System.Text;
 using System.Threading;
 using static System.Collections.Specialized.BitVector32;
 
-namespace ServerCore
+namespace Server
 {
+    class Packet
+    {
+        public ushort size;
+        public ushort packetId;
+
+    }
+
+    class LoginOKpacket : Packet
+    {
+        
+    }
     class GameSession : Session
     {
         public override void OnConnected(EndPoint endPoint)
         {
             Console.WriteLine($"OnConnected : {endPoint}");
-            byte[] sendBuff = Encoding.UTF8.GetBytes("Welcome to RPG Server!");
+            Packet packet = new Packet() { size = 10, packetId = 10 };
+
+            ArraySegment<byte> openSegment = SendBufferHelper.Open(4096);
+            byte[] buffer = BitConverter.GetBytes(packet.size);
+            byte[] buffer2 = BitConverter.GetBytes(packet.packetId);
+            Array.Copy(buffer, 0, openSegment.Array, openSegment.Offset, buffer.Length);
+            Array.Copy(buffer2, 0, openSegment.Array, openSegment.Offset+ buffer.Length, buffer2.Length);
+            ArraySegment<byte> sendBuff = SendBufferHelper.Close(buffer.Length + buffer2.Length);
             Send(sendBuff);
 
             Thread.Sleep(1000);
@@ -27,10 +46,11 @@ namespace ServerCore
             Console.WriteLine($"OnDisconnected : {endPoint}");
         }
 
-        public override void OnRecv(ArraySegment<byte> buffer)
+        public override int OnRecv(ArraySegment<byte> buffer)
         {
             string recvData = Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
             Console.WriteLine($"[From Client] {recvData}");
+            return buffer.Count;
         }
 
         public override void OnSend(int numOfBytes)
@@ -39,7 +59,7 @@ namespace ServerCore
 
         }
     }
-    class Program
+    class ServerProgram
     {
         static Listener _listener = new Listener();
 
@@ -63,12 +83,12 @@ namespace ServerCore
                     ;
                 }
             }
-            catch(Exception e) 
+            catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
             //
-            
+
 
         }
 
