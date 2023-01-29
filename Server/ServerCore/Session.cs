@@ -8,7 +8,7 @@ using System.Threading;
 namespace ServerCore
 {
     // recv, send 관리
-    abstract class Session
+    public abstract class Session
     {
         Socket _socket;
         int _disconnected = 0;
