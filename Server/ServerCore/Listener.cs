@@ -22,7 +22,6 @@ namespace ServerCore
             //Listen(영업시작)
             //backlog : 최대대기수
             _listenSocket.Listen(10);
-
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();// 한번만 만들어주면 계속 재사용가능함
             args.Completed += new EventHandler<SocketAsyncEventArgs>(OnAcceptCompleted);
             RegisterAccept(args);
@@ -40,6 +39,7 @@ namespace ServerCore
 
         }
 
+        // 스레드풀에서 하나 떙겨와서 실행됌. 레드존. 같은데이터를 쓰는경우에 위험함
         void OnAcceptCompleted(object sender, SocketAsyncEventArgs args)
         {//유저가 커넥트 요청이 들어오면 여기로 떨어짐
             if(args.SocketError == SocketError.Success)

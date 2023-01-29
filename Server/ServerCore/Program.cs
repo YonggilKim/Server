@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Net;
 using System.Text;
+using System.Threading;
 
 namespace ServerCore
 {
@@ -13,15 +14,15 @@ namespace ServerCore
         {
             try
             {
-                //받는 부분
-                byte[] recvBuff = new byte[1024];
-                int recvBytes = clientSocket.Receive(recvBuff);// recvBuff 에 저장
-                string recvData = Encoding.UTF8.GetString(recvBuff, 0, 1024);
-                Console.WriteLine($"[From Client] {recvData}");
-
-                //보낸다
+                Session session = new Session();
+                session.Start(clientSocket);
                 byte[] sendBuff = Encoding.UTF8.GetBytes("welcome to server!");
-                clientSocket.Send(sendBuff);
+                session.Send(sendBuff);
+
+                Thread.Sleep(1000);
+
+                session.Disconnect();
+
             }
             catch (Exception e)
             {
