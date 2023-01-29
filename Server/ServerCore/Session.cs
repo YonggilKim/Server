@@ -11,6 +11,10 @@ namespace ServerCore
     {
         Socket _socket;
         int _disconnected = 0;
+        object _lock = new object();
+        Queue<byte[]> _sendQueue= new Queue<byte[]>();
+        bool _pending = false;// 
+        SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();
 
         public void Start(Socket socket)
         {
@@ -18,27 +22,75 @@ namespace ServerCore
             SocketAsyncEventArgs recvArgs = new SocketAsyncEventArgs();
             recvArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnRecvCompleted);
             recvArgs.SetBuffer(new byte[1024], 0, 1024);//버퍼 세팅
-            
+
+            _sendArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnSendComplete);
+
             RegisterRecv(recvArgs);
         }
 
         public void Send(byte[] sendBuff)
         {
-            _socket.Send(sendBuff);
+            lock (_lock)
+            { 
+                _sendQueue.Enqueue(sendBuff);
+                if(_pending == false)// 전송가능한 상태
+                    RegisterSend();
+            }
+
         }
 
         public void Disconnect()
         {
             if (Interlocked.Exchange(ref _disconnected, 1) == 1)
                 return;
+
             _socket.Shutdown(SocketShutdown.Both);
             _socket.Close();
         }
+
         #region 네트워크통신
+        void RegisterSend()
+        {
+            _pending = true;
+            byte[] buff = _sendQueue.Dequeue();
+            _sendArgs.SetBuffer(buff, 0, buff.Length);
+
+            bool pending = _socket.SendAsync(_sendArgs);
+            if (pending == false)
+                OnSendComplete(null, _sendArgs);
+        }
+
+        void OnSendComplete(object sender, SocketAsyncEventArgs args)
+        {
+            lock (_lock)
+            {
+                if (args.BytesTransferred > 0 && args.SocketError == SocketError.Success)
+                {
+                    try
+                    {
+                        if (_sendQueue.Count > 0)
+                        {
+                            RegisterSend();
+                        }
+                        else { 
+                            _pending = false;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"OnSendComplete Failed : {e}");
+                    }
+                }
+                else
+                {
+                    Disconnect();
+                }
+            }
+        }
         void RegisterRecv(SocketAsyncEventArgs args)
         {
             bool pending = _socket.ReceiveAsync(args);
-            if(pending == false)
+            if (pending == false)
                 OnRecvCompleted(null, args);
         }
 
@@ -47,19 +99,20 @@ namespace ServerCore
             if (args.BytesTransferred > 0 && args.SocketError == SocketError.Success)
             {
                 //TODO
-                try 
-                { 
+                try
+                {
                     string recvData = Encoding.UTF8.GetString(args.Buffer, args.Offset, args.BytesTransferred);
                     Console.WriteLine($"[From Client] {recvData}");
                     RegisterRecv(args);
-                }catch(Exception e)
+                }
+                catch (Exception e)
                 {
                     Console.WriteLine($"OnRecvCompleted Failed : {e}");
                 }
             }
             else
             {
-                //TODO disconnect
+                Disconnect();
             }
         }
         #endregion
