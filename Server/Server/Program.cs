@@ -5,16 +5,35 @@ using System.Text;
 using System.Threading;
 using static System.Collections.Specialized.BitVector32;
 using ServerCore;
+using System.Collections.Generic;
 
 namespace Server
 {
+    class Knight
+    {
+        public int hp;
+        public int attack;
+        public string name;
+        public List<int> skills = new List<int>();
+    }
     class GameSession : Session
     {
         public override void OnConnected(EndPoint endpoint)
         {
             Console.WriteLine($"OnConnected : {endpoint}");
-            byte[] sendBuff = Encoding.UTF8.GetBytes("welcome to server!");
-            Send(sendBuff);
+            Knight knight = new Knight(){ hp = 100, attack = 10};
+            //byte[] sendBuff = Encoding.UTF8.GetBytes("welcome to server!");
+
+
+
+            ArraySegment<byte> openSegment = SendBufferHelper.Open(4096);
+            byte[] buffer = BitConverter.GetBytes(knight.hp);
+            byte[] buffer2 = BitConverter.GetBytes(knight.hp);
+            Array.Copy(buffer, 0, openSegment.Array, openSegment.Offset, buffer.Length);
+            Array.Copy(buffer2, 0, openSegment.Array, openSegment.Offset + buffer.Length, buffer.Length);
+            ArraySegment<byte> sendBuff = SendBufferHelper.Close(buffer.Length + buffer2.Length);//
+
+            Send(openSegment);
             Thread.Sleep(1000);
             Disconnect();
         }

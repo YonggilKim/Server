@@ -16,7 +16,7 @@ namespace ServerCore
         RecvBuffer _recvBuffer = new RecvBuffer(1024);
 
         object _lock = new object();
-        Queue<byte[]> _sendQueue= new Queue<byte[]>();
+        Queue<ArraySegment<byte>> _sendQueue= new Queue<ArraySegment<byte>>();
         List<ArraySegment<byte>> _pendingList = new List<ArraySegment<byte>>();
         SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();
         SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();
@@ -35,7 +35,7 @@ namespace ServerCore
             RegisterRecv();
         }
 
-        public void Send(byte[] sendBuff)
+        public void Send(ArraySegment<byte> sendBuff)
         {
             lock (_lock)
             { 
@@ -63,8 +63,8 @@ namespace ServerCore
             // 위의 방법대로 하는것보다 버퍼리스트로 한번에 SendAsync하는게 더 효율적이다.
             while (_sendQueue.Count > 0)
             {
-                byte[] buff = _sendQueue.Dequeue();
-                _pendingList.Add(new ArraySegment<byte>(buff, 0, buff.Length));//
+                ArraySegment<byte> buff = _sendQueue.Dequeue();
+                _pendingList.Add(buff);//
                 //ArraySegment -> Array의 일부를 나타냄
                 //c++은 포인터를 사용하면되지만 c#같은 경우는 항상 배열을 사용할때 
                 // 첫 버퍼주소만 알 수 있기 때문에  어레이세그먼트를 사용
