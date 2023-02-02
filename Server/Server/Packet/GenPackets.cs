@@ -1,4 +1,4 @@
-﻿using ServerCore;
+using ServerCore;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -9,8 +9,8 @@ using System.Text;
 public enum PacketID
 {
     C_Chat = 1,
-    S_Chat = 2,
-
+	S_Chat = 2,
+	
 }
 
 public interface IPacket
@@ -21,10 +21,10 @@ public interface IPacket
 }
 
 
-class C_Chat : IPacket
+class C_Chat :IPacket
 {
     public string chat;
-    public ushort Protocol { get { return (ushort)PacketID.C_Chat; } }
+    public ushort Protocol { get { return (ushort)PacketID.C_Chat; }}
 
     public void Read(ArraySegment<byte> segment)
     {
@@ -32,9 +32,9 @@ class C_Chat : IPacket
         count += sizeof(ushort);
         count += sizeof(ushort);
         ushort chatLen = BitConverter.ToUInt16(segment.Array, segment.Offset + count);
-        count += sizeof(ushort);
-        this.chat = Encoding.Unicode.GetString(segment.Array, segment.Offset + count, chatLen);
-        count += chatLen;
+		count += sizeof(ushort);
+		this.chat = Encoding.Unicode.GetString(segment.Array, segment.Offset + count, chatLen);
+		count += chatLen;
     }
 
     public ArraySegment<byte> Write()
@@ -46,9 +46,9 @@ class C_Chat : IPacket
         Array.Copy(BitConverter.GetBytes((ushort)PacketID.C_Chat), 0, segment.Array, segment.Offset + count, sizeof(ushort));
         count += sizeof(ushort);
         ushort chatLen = (ushort)Encoding.Unicode.GetBytes(this.chat, 0, this.chat.Length, segment.Array, segment.Offset + count + sizeof(ushort));
-        Array.Copy(BitConverter.GetBytes(chatLen), 0, segment.Array, segment.Offset + count, sizeof(ushort));
-        count += sizeof(ushort);
-        count += chatLen;
+		Array.Copy(BitConverter.GetBytes(chatLen), 0, segment.Array, segment.Offset + count, sizeof(ushort));
+		count += sizeof(ushort);
+		count += chatLen;
 
         Array.Copy(BitConverter.GetBytes(count), 0, segment.Array, segment.Offset, sizeof(ushort));
 
@@ -56,11 +56,11 @@ class C_Chat : IPacket
     }
 }
 
-class S_Chat : IPacket
+class S_Chat :IPacket
 {
     public int playerId;
-    public string chat;
-    public ushort Protocol { get { return (ushort)PacketID.S_Chat; } }
+	public string chat;
+    public ushort Protocol { get { return (ushort)PacketID.S_Chat; }}
 
     public void Read(ArraySegment<byte> segment)
     {
@@ -68,11 +68,11 @@ class S_Chat : IPacket
         count += sizeof(ushort);
         count += sizeof(ushort);
         this.playerId = BitConverter.ToInt32(segment.Array, segment.Offset + count);
-        count += sizeof(int);
-        ushort chatLen = BitConverter.ToUInt16(segment.Array, segment.Offset + count);
-        count += sizeof(ushort);
-        this.chat = Encoding.Unicode.GetString(segment.Array, segment.Offset + count, chatLen);
-        count += chatLen;
+		count += sizeof(int);
+		ushort chatLen = BitConverter.ToUInt16(segment.Array, segment.Offset + count);
+		count += sizeof(ushort);
+		this.chat = Encoding.Unicode.GetString(segment.Array, segment.Offset + count, chatLen);
+		count += chatLen;
     }
 
     public ArraySegment<byte> Write()
@@ -84,11 +84,11 @@ class S_Chat : IPacket
         Array.Copy(BitConverter.GetBytes((ushort)PacketID.S_Chat), 0, segment.Array, segment.Offset + count, sizeof(ushort));
         count += sizeof(ushort);
         Array.Copy(BitConverter.GetBytes(this.playerId), 0, segment.Array, segment.Offset + count, sizeof(int));
-        count += sizeof(int);
-        ushort chatLen = (ushort)Encoding.Unicode.GetBytes(this.chat, 0, this.chat.Length, segment.Array, segment.Offset + count + sizeof(ushort));
-        Array.Copy(BitConverter.GetBytes(chatLen), 0, segment.Array, segment.Offset + count, sizeof(ushort));
-        count += sizeof(ushort);
-        count += chatLen;
+		count += sizeof(int);
+		ushort chatLen = (ushort)Encoding.Unicode.GetBytes(this.chat, 0, this.chat.Length, segment.Array, segment.Offset + count + sizeof(ushort));
+		Array.Copy(BitConverter.GetBytes(chatLen), 0, segment.Array, segment.Offset + count, sizeof(ushort));
+		count += sizeof(ushort);
+		count += chatLen;
 
         Array.Copy(BitConverter.GetBytes(count), 0, segment.Array, segment.Offset, sizeof(ushort));
 

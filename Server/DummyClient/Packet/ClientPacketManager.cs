@@ -1,4 +1,4 @@
-﻿using ServerCore;
+using ServerCore;
 using System.Collections.Generic;
 using System;
 
@@ -9,7 +9,7 @@ class PacketManager
     public static PacketManager Instance { get { return _instance; } }
     #endregion
 
-    PacketManager()
+    PacketManager() 
     {
         Register();
     }
@@ -19,13 +19,13 @@ class PacketManager
 
     public void Register()
     {
-        _makeFunc.Add((ushort)PacketID.S_Chat, MakePacket<S_Chat>);
+      _makeFunc.Add((ushort)PacketID.S_Chat, MakePacket<S_Chat>);
         _handler.Add((ushort)PacketID.S_Chat, PacketHandler.S_ChatHandler);
 
 
     }
 
-    public void OnRecvPacket(PacketSession session, ArraySegment<byte> buffer, Action<PacketSession, IPacket> onRecvCallBack = null)
+    public void OnRecvPacket(PacketSession session, ArraySegment<byte> buffer, Action<PacketSession, IPacket> onRecvCallBack = null) 
     {
         //2. 사이즈와 아이디를 가지고와서 switch-case문에서 하던걸 -> 딕셔너리로 가져옴
         ushort count = 0;
@@ -34,11 +34,11 @@ class PacketManager
         count += 2;
         ushort id = BitConverter.ToUInt16(buffer.Array, buffer.Offset + count);
         count += 2;
-
+            
         //3. 실제로 핸들러를 등록해 놓으면 그곳에 인보크를 할 예정
         Func<PacketSession, ArraySegment<byte>, IPacket> func = null;
         if (_makeFunc.TryGetValue(id, out func))
-        {
+        { 
             IPacket packet = func.Invoke(session, buffer);
             if (onRecvCallBack != null)
                 onRecvCallBack.Invoke(session, packet);
@@ -47,7 +47,7 @@ class PacketManager
         }
     }
 
-    T MakePacket<T>(PacketSession session, ArraySegment<byte> buffer) where T : IPacket, new()
+    T MakePacket<T>(PacketSession session, ArraySegment<byte> buffer) where T: IPacket, new()
     {
         T pkt = new T();//4. PlayerInfoReq 이라는 패킷이 만들어지면서
         pkt.Read(buffer);
