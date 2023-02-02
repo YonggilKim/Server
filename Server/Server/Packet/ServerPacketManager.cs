@@ -14,18 +14,18 @@ class PacketManager
         Register();
     }
 
-    Dictionary<ushort, Action<PacketSession, ArraySegment<byte>>> _onRecv = new Dictionary<ushort, Action<PacketSession, ArraySegment<byte>>>();
+    Dictionary<ushort, Func<PacketSession, ArraySegment<byte>, IPacket>> _makeFunc = new Dictionary<ushort, Func<PacketSession, ArraySegment<byte>, IPacket>>();
     Dictionary<ushort, Action<PacketSession, IPacket>> _handler = new Dictionary<ushort, Action<PacketSession, IPacket>>();
 
     public void Register()
     {
-        _onRecv.Add((ushort)PacketID.C_Chat, MakePacket<C_Chat>);
+        _makeFunc.Add((ushort)PacketID.C_Chat, MakePacket<C_Chat>);
         _handler.Add((ushort)PacketID.C_Chat, PacketHandler.C_ChatHandler);
 
 
     }
 
-    public void OnRecvPacket(PacketSession session, ArraySegment<byte> buffer)
+    public void OnRecvPacket(PacketSession session, ArraySegment<byte> buffer, Action<PacketSession, IPacket> onRecvCallBack = null)
     {
         //2. 사이즈와 아이디를 가지고와서 switch-case문에서 하던걸 -> 딕셔너리로 가져옴
         ushort count = 0;
@@ -36,17 +36,28 @@ class PacketManager
         count += 2;
 
         //3. 실제로 핸들러를 등록해 놓으면 그곳에 인보크를 할 예정
-        Action<PacketSession, ArraySegment<byte>> action = null;
-        if (_onRecv.TryGetValue(id, out action))
-            action.Invoke(session, buffer);// 호출되는 순간 Makepacket 호출 -> Register()에서 MacketPacket을 등록해놨으니깐.
+        Func<PacketSession, ArraySegment<byte>, IPacket> func = null;
+        if (_makeFunc.TryGetValue(id, out func))
+        {
+            IPacket packet = func.Invoke(session, buffer);
+            if (onRecvCallBack != null)
+                onRecvCallBack.Invoke(session, packet);
+            else
+                HandlePacket(session, packet);
+        }
     }
 
-    void MakePacket<T>(PacketSession session, ArraySegment<byte> buffer) where T : IPacket, new()
+    T MakePacket<T>(PacketSession session, ArraySegment<byte> buffer) where T : IPacket, new()
     {
         T pkt = new T();//4. PlayerInfoReq 이라는 패킷이 만들어지면서
         pkt.Read(buffer);
+        return pkt;
+    }
+
+    public void HandlePacket(PacketSession session, IPacket packet)
+    {
         Action<PacketSession, IPacket> action = null;
-        if (_handler.TryGetValue(pkt.Protocol, out action))
-            action.Invoke(session, pkt);// 5. 최종적으로  PacketHandler.PlayerInfoReqHandler를 호출하게 됌.
+        if (_handler.TryGetValue(packet.Protocol, out action))
+            action.Invoke(session, packet);// 5. 최종적으로  PacketHandler.PlayerInfoReqHandler를 호출하게 됌.
     }
 }
