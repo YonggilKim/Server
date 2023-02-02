@@ -18,8 +18,7 @@ namespace Server
 
         static void Main(string[] args)
         {
-            //0. 싱글스레드인 부분에 register를 먼저 해준다.
-            PacketManager.Instance.Register();
+
             //DNS(Domain Name System)
             // www.yonggil.com 에 해당하는 IP를 찾아주는시스템
             string host = Dns.GetHostName();// 내로컬컴퓨터의 호스트
