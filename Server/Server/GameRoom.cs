@@ -11,7 +11,6 @@ namespace Server
         List<ClientSession> _sessions = new List<ClientSession>();
         JobQueue _jobQueue = new JobQueue();
 
-
         public void Push(Action job)
         {
             _jobQueue.Push(job);
@@ -23,7 +22,7 @@ namespace Server
             packet.playerId = session.SessionId;
             packet.chat = chat + $" I am  {packet.playerId}";
             ArraySegment<byte> segment = packet.Write();
-                
+            //N^2
             foreach (ClientSession s in _sessions)
                  s.Send(segment);
         }
