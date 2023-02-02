@@ -55,7 +55,16 @@ namespace ServerCore
         public abstract void OnConnected(EndPoint endpoint);
         public abstract int OnRecv(ArraySegment<byte> buffer);
         public abstract void OnSend(int numOfBytes);
-        public abstract void OnDisconnected(EndPoint endpoint);   
+        public abstract void OnDisconnected(EndPoint endpoint);
+
+        void Clear()
+        {
+            lock (_lock)
+            {
+                _sendQueue.Clear();
+                _pendingList.Clear();
+            }
+        }
 
         public void Start(Socket socket)
         {
@@ -74,7 +83,6 @@ namespace ServerCore
                 if(_pendingList.Count == 0)// 전송가능한 상태
                     RegisterSend();
             }
-
         }
 
         public void Disconnect()
@@ -84,11 +92,14 @@ namespace ServerCore
             OnDisconnected(_socket.RemoteEndPoint);
             _socket.Shutdown(SocketShutdown.Both);
             _socket.Close();
+            Clear();
         }
 
         #region 네트워크통신
         void RegisterSend()
         {
+            if (_disconnected == 1)
+                return;
             //byte[] buff = _sendQueue.Dequeue();
             //_sendArgs.SetBuffer(buff, 0, buff.Length);
             // 위의 방법대로 하는것보다 버퍼리스트로 한번에 SendAsync하는게 더 효율적이다.
@@ -102,10 +113,17 @@ namespace ServerCore
                 //a[][][][][][][][][][]
             }
             _sendArgs.BufferList = _pendingList;
-            
-            bool pending = _socket.SendAsync(_sendArgs);
-            if (pending == false)
-                OnSendComplete(null, _sendArgs);
+
+            try
+            {
+                bool pending = _socket.SendAsync(_sendArgs);
+                if (pending == false)
+                    OnSendComplete(null, _sendArgs);
+            }
+            catch (Exception e) 
+            {
+                Console.WriteLine($"RegisterSend Failed {e}");
+            }
         }
 
         void OnSendComplete(object sender, SocketAsyncEventArgs args)
@@ -136,15 +154,25 @@ namespace ServerCore
                 }
             }
         }
+
         void RegisterRecv()
         {
+            if (_disconnected == 1)
+                return;
+
             _recvBuffer.Clean();
             ArraySegment<byte> segment = _recvBuffer.WriteSegment;
             _recvArgs.SetBuffer(segment.Array, segment.Offset, segment.Count);
-
-            bool pending = _socket.ReceiveAsync(_recvArgs);
-            if (pending == false)
-                OnRecvCompleted(null, _recvArgs);
+            try 
+            {
+                bool pending = _socket.ReceiveAsync(_recvArgs);
+                if (pending == false)
+                    OnRecvCompleted(null, _recvArgs);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"RegisterRecv Failed {e}");
+            }
         }
 
         void OnRecvCompleted(object sender, SocketAsyncEventArgs args)
