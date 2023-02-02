@@ -35,8 +35,6 @@ namespace Server
             ArraySegment<byte> segment = packet.Write();
 
             _pendingList.Add(segment); // 리스트에 패킷을 모은다.
-            //N^2
-
         }
 
         public void Enter(ClientSession session)
