@@ -12,7 +12,7 @@ namespace PacketGenerator
 using System.Collections.Generic;
 using System;
 
-class PacketManager
+public class PacketManager
 {{
     #region Singleton
     static PacketManager _instance = new PacketManager();
@@ -70,9 +70,8 @@ class PacketManager
 }}";
         // {0} 패킷 이름
         public static string managerRegisterFormat =
-@"      _makeFunc.Add((ushort)PacketID.{0}, MakePacket<{0}>);
-        _handler.Add((ushort)PacketID.{0}, PacketHandler.{0}Handler);
-";
+@"		_makeFunc.Add((ushort)PacketID.{0}, MakePacket<{0}>);
+		_handler.Add((ushort)PacketID.{0}, PacketHandler.{0}Handler);";
         // {0} 패킷 이름/번호 목록
         // {1} 패킷 목록
         public static string fileFormat =
@@ -109,7 +108,7 @@ public interface IPacket
         // {3} 멤버변수 Write
         public static string packetFormat =
 @"
-class {0} :IPacket
+public class {0} :IPacket
 {{
     {1}
     public ushort Protocol {{ get {{ return (ushort)PacketID.{0}; }}}}
@@ -198,7 +197,7 @@ count += sizeof(ushort);
 for(int i = 0; i < {1}Len; i++)
 {{
     {0} {1} = new {0}();
-    {1}.Read(s, ref count);
+    {1}.Read(segment, ref count);
     {1}s.Add({1});
 }}";
 
